@@ -27,6 +27,7 @@ package picard.util;
 import java.math.BigDecimal;
 import java.util.Arrays;
 
+import static java.lang.Math.log1p;
 import static java.lang.Math.pow;
 
 /**
@@ -37,6 +38,11 @@ import static java.lang.Math.pow;
 public class MathUtil {
     /** The double value closest to 1 while still being less than 1. */
     public static final double MAX_PROB_BELOW_ONE = 0.9999999999999999d;
+
+    public static double log10_1p(final double x){
+        return log1p(x)/LOG_10_MATH.log_of_base;
+    }
+
 
     /** Calculated the mean of an array of doubles. */
     public static double mean(final double[] in, final int start, final int stop) {
@@ -160,29 +166,29 @@ public class MathUtil {
     }
 
     /**
-     * Takes a complete set of mutually exclusive log likelihoods and converts them to probabilities
+     * Takes a complete set of mutually exclusive logPosteriors and converts them to probabilities
      * that sum to 1 with as much fidelity as possible.  Limits probabilities to be in the space:
-     * 0.9999999999999999 >= p >= (1-0.9999999999999999)/(likelihoods.length-1)
+     * 0.9999999999999999 >= p >= (1-0.9999999999999999)/(logPosteriors.length-1)
      */
-    public static double[] logLikelihoodsToProbs(final double[] likelihoods) {
+    public static double[] pNormalizeLogProbability(final double[] lPosterior) {
         // Note: bumping all the LLs so that the biggest is 300 ensures that we have the
         // widest range possible when unlogging them before one of them underflows. 10^300 is
         // near the maximum before you hit positive infinity.
 
-        final double maxLikelihood = max(likelihoods);
+        final double maxLikelihood = max(lPosterior);
         final double bump = 300 - maxLikelihood;
 
-        final double[] tmp = new double[likelihoods.length];
+        final double[] tmp = new double[lPosterior.length];
         double total = 0;
-        for (int i = 0; i < likelihoods.length; ++i) {
-            tmp[i] = pow(10, likelihoods[i] + bump);
+        for (int i = 0; i < lPosterior.length; ++i) {
+            tmp[i] = pow(10, lPosterior[i] + bump);
             total += tmp[i];
         }
 
         final double maxP = MAX_PROB_BELOW_ONE;
         final double minP = (1 - MAX_PROB_BELOW_ONE) / (tmp.length - 1);
 
-        for (int i = 0; i < likelihoods.length; ++i) {
+        for (int i = 0; i < lPosterior.length; ++i) {
             tmp[i] /= total;
             if (tmp[i] > maxP) tmp[i] = maxP;
             else if (tmp[i] < minP) tmp[i] = minP;
@@ -199,6 +205,28 @@ public class MathUtil {
         final double[] result = new double[len];
         for (int i = 0; i < len; ++i) result[i] = numerators[i] / denominators[i];
         return result;
+    }
+
+    /**
+     * Takes a vector and converts it them to probabilities
+     * that sum to 1 with as much fidelity as possible.  Limits probabilities to be in the space:
+     * 0.9999999999999999 >= p >= (1-0.9999999999999999)/(likelihoods.length-1)
+     */
+    public static double[] pNormalizeVector(final double[] pPosterior) {
+
+        final double[] tmp = new double[pPosterior.length];
+        final double total = sum(pPosterior);
+
+        final double maxP = MAX_PROB_BELOW_ONE;
+        final double minP = (1 - MAX_PROB_BELOW_ONE) / (tmp.length - 1);
+
+        for (int i = 0; i < pPosterior.length; ++i) {
+            tmp[i] = pPosterior[i] / total;
+            if (tmp[i] > maxP) tmp[i] = maxP;
+            else if (tmp[i] < minP) tmp[i] = minP;
+        }
+
+        return tmp;
     }
 
     /** Calculates the product of two arrays of the same length. */
@@ -249,9 +277,11 @@ public class MathUtil {
      */
     public static class LogMath {
         private final double base;
+        public final double log_of_base;
 
         private LogMath(final double base) {
             this.base = base;
+            this.log_of_base=Math.log(base);
         }
 
         /** Returns the decimal representation of the provided log values. */
