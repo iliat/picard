@@ -239,7 +239,14 @@ public class MathUtil {
         return result;
     }
 
-    
+    /** calculates the sum of the arrays as a third array. */
+    public static double[] sum(final double[] lhs, final double[] rhs) {
+        final int len = lhs.length;
+        final double [] result = new double[len];
+        for (int i = 0; i < len; ++i) result[i] = lhs[i] + rhs[i];
+        return result;
+    }
+
     /** Returns the sum of the elements in the array. */
     public static double sum(final double[] arr) {
         double result = 0;
