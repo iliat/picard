@@ -170,6 +170,9 @@ public class MathUtil {
      * that sum to 1 with as much fidelity as possible.  Limits probabilities to be in the space:
      * 0.9999999999999999 >= p >= (1-0.9999999999999999)/(logPosteriors.length-1)
      */
+    @Deprecated  // use pNormalizeLogProbability instead (renamed)
+    public static double[] logLikelihoodsToProbs(final double[] likelihoods) {return pNormalizeLogProbability(likelihoods);}
+
     public static double[] pNormalizeLogProbability(final double[] lPosterior) {
         // Note: bumping all the LLs so that the biggest is 300 ensures that we have the
         // widest range possible when unlogging them before one of them underflows. 10^300 is
